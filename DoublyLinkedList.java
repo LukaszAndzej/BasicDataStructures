@@ -1,11 +1,11 @@
 package com.company;
 
-class Node {
-    Node next;
-    Node preview;
-    int element;
+class Node<T> {
+    Node<T> next;
+    Node<T> preview;
+    T element;
 
-    public Node(int element) {
+    public Node(T element) {
         this.element = element;
     }
 }
@@ -16,91 +16,97 @@ class LinkedListException extends Exception {
     }
 }
 
-class DoublyLinkedListLogic {
+class DoublyLinkedListLogic<T> {
 
-    protected Node head;
-    protected Node trailer;
+    protected Node<T> head;
+    protected Node<T> trailer;
 
     protected boolean emptyList() { return head == null;}
-    protected boolean lastNode(Node node) { return (node == trailer);}
-    protected boolean firstNode(Node node) { return (node == head);}
-    protected boolean nodeIsNull(Node node) { return (node == null);}
-    protected boolean checkElement(Node node, int element) { return (node.element != element);}
-    protected boolean nodeCondition(Node node, int element) { return (!nodeIsNull(node) && checkElement(node, element));}
+    protected boolean lastNode(Node<T> node) { return (node.equals(trailer));}
+    protected boolean firstNode(Node<T> node) { return (node.equals(head));}
+    protected boolean nodeIsNull(Node<T> node) { return (node == null);}
+    protected boolean checkElement(Node<T> node, T element) { return (!node.element.equals(element));}
+    protected boolean nodeCondition(Node<T> node, T element) { return (!nodeIsNull(node) && checkElement(node, element));}
 }
 
-public class DoublyLinkedList extends DoublyLinkedListLogic {
+public class DoublyLinkedList<T> extends DoublyLinkedListLogic<T> {
 
-    private Node setHeadAndTrailer(int element) {
-        trailer = head = new Node(element);
+    private Node<T> setHeadAndTrailer(T element) {
+        trailer = head = new Node<>(element);
         return head;
     }
 
-    public Node insertLast(int newElement) {
+    public Node<T> first() { return head;}
+    public Node<T> last() { return trailer;}
+    public Node<T> before(Node<T> node) { return node.preview;}
+    public Node<T> after(Node<T> node) { return node.next;}
+    public T element(Node<T> node) { return node.element;}
+
+    public Node<T> insertLast(T newElement) {
 
         if(emptyList()) return setHeadAndTrailer(newElement);
 
-        Node newNode = new Node(newElement);
-        newNode.preview = trailer;
+        Node<T> newNode = new Node<>(newElement);
+        newNode.preview = last();
         trailer.next = newNode;
         trailer = newNode;
 
         return newNode;
     }
 
-    public Node insertFirst(int newElement) {
+    public Node<T> insertFirst(T newElement) {
         if(emptyList()) return setHeadAndTrailer(newElement);
 
-        Node newNode = new Node(newElement);
-        newNode.next = head;
+        Node<T> newNode = new Node<>(newElement);
+        newNode.next = first();
         head.preview = newNode;
         head = newNode;
 
         return newNode;
     }
 
-    public Node insertAfter(Node node, int newElement) throws LinkedListException {
+    public Node<T> insertAfter(Node<T> node, T newElement) throws LinkedListException {
 
         if(nodeIsNull(node)) throw new LinkedListException("Node is null");
         if(lastNode(node)) return insertLast(newElement);
 
-        Node newNode = new Node(newElement);
+        Node<T> newNode = new Node<>(newElement);
 
         newNode.element = newElement;
         newNode.preview = node;
-        newNode.next = node.next;
+        newNode.next = after(node);
         (node.next).preview = newNode;
         node.next = newNode;
 
         return newNode;
     }
 
-    public Node insertBefore(Node node, int newElement) throws LinkedListException {
+    public Node<T> insertBefore(Node<T> node, T newElement) throws LinkedListException {
 
         if (nodeIsNull(node)) throw new LinkedListException("Node not exist!");
         if (firstNode(node)) return insertFirst(newElement);
 
-        Node newNode = new Node(newElement);
+        Node<T> newNode = new Node<>(newElement);
 
         newNode.next = node;
-        newNode.preview = node.preview;
+        newNode.preview = before(node);
         (node.preview).next = newNode;
         node.preview = newNode;
 
         return newNode;
     }
 
-    public int remove(Node node) throws LinkedListException {
+    public T remove(Node<T> node) throws LinkedListException {
 
         if (nodeIsNull(node)) throw new LinkedListException("Node not exist!");
 
-        int removeElement = node.element;
+        T removeElement = element(node);
 
-        if (lastNode(node)) trailer = node.preview;
-        if (firstNode(node)) head = node.next;
+        if (lastNode(node)) trailer = before(node);
+        if (firstNode(node)) head = after(node);
 
-        if (!nodeIsNull(node.preview)) (node.preview).next = node.next;
-        if (!nodeIsNull(node.next)) (node.next).preview = node.preview;
+        if (!nodeIsNull(node.preview)) (node.preview).next = after(node);
+        if (!nodeIsNull(node.next)) (node.next).preview = before(node);
 
         node.preview = null;
         node.next = null;
@@ -108,22 +114,22 @@ public class DoublyLinkedList extends DoublyLinkedListLogic {
         return removeElement;
     }
 
-    public Node findNode(int element) {
-        Node current = head;
-        while ( nodeCondition(current, element) ) current = current.next;
+    public Node<T> findNode(T element) {
+        Node<T> current = first();
+        while ( nodeCondition(current, element) ) current = after(current);
 
         return current;
     }
 
     public void revers() throws LinkedListException {
 
-        Node temporaryHead = null;
+        Node<T> temporaryHead = null;
 
-        for (int i = 0; head != trailer; i++) {
-            if (i == 0) temporaryHead = insertFirst(remove(trailer));
+        for (int i = 0; first() != last(); i++) {
+            if (i == 0) temporaryHead = insertFirst(remove(last()));
             else {
-                insertAfter(head,remove(trailer));
-                head = head.next;
+                insertAfter(first(),remove(last()));
+                head = after(first());
             }
         }
 
@@ -132,8 +138,8 @@ public class DoublyLinkedList extends DoublyLinkedListLogic {
 
     public void printList() {
         System.out.println("Print:");
-        for (Node current = head; !nodeIsNull(current); current = current.next) {
-            if (current != head) System.out.print(" -> ");
+        for (Node<T> current = first(); !nodeIsNull(current); current = after(current)) {
+            if (current != first()) System.out.print(" -> ");
             System.out.print("(" + current.element + ")");
         }
     }
